@@ -1,0 +1,68 @@
+---
+title: "COVID19"
+author: "RQ"
+date: "21/03/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(tidyverse)
+library(lubridate)
+```
+
+Thierry downloaded NM flight table. Stored on P and then moved to project folder, data-src.
+
+Load NM flight table for data preparation.
+
+```{r}
+fn <- "./data-src/T_FLIGHT 01012020-15012020.xlsx"
+sh <- excel_sheets(fn)
+ds <- readxl::read_excel(fn, sheet = "Sheet 1", col_names = TRUE)
+```
+
+names(ds)
+
+flight table vars:
+[1] "FLT_UID"                     "LOBT"                        "ID"                         
+ [4] "TACT_ID"                     "AIRCRAFT_ID"                 "REGISTRATION"               
+ [7] "AIRCRAFT_TYPE_ICAO_ID"       "AIRCRAFT_OPERATOR"           "ADEP"                       
+[10] "ADES"                        "ST_DEP"                      "ST_DES"                     
+[13] "AIRAC_CYCLE"                 "IOBT"                        "EOBT_1"                     
+[16] "ARVT_1"                      "FL_TOP_1"                    "RTE_LEN_1"                  
+[19] "TAXI_TIME_1"                 "FLT_DUR_1"                   "COBT_2"                     
+[22] "ARVT_2"                      "FL_TOP_2"                    "RTE_LEN_2"                  
+[25] "TAXI_TIME_2"                 "FLT_DUR_2"                   "ATFM_DELAY"                 
+[28] "MOST_PEN_REG"                "REG_ID"                      "REG_DAY"                    
+[31] "REG_PERIOD"                  "REG_LOC"                     "REG_REASON"                 
+[34] "IATA_DELAY_CODE"             "TV_ID"                       "AOBT_3"                     
+[37] "ARVT_3"                      "FL_TOP_3"                    "RTE_LEN_3"                  
+[40] "TAXI_TIME_3"                 "FLT_DUR_3"                   "ICAO_EQPT"                  
+[43] "DATA_LINK_EQPT"              "COM_EQPT"                    "NAV_EQPT"                   
+[46] "SSR_EQPT"                    "SURVIVAL_EQPT"               "PERFORMANCE"                
+[49] "WK_TBL_CAT"                  "FUEL_ENDURANCE"              "PERSONS_ON_BOARD"           
+[52] "ICAO_FLT_TYPE"               "NORTH_ATLANTIC"              "SENSITIVE"                  
+[55] "FLT_STATUS"                  "FLT_STATUS_BFR_ACT"          "EXMP_RSN"                   
+[58] "EXMP_RSN_LH"                 "FLT_PLN_SOURCE"              "FLT_DATA_QUAL"              
+[61] "FLT_DATA_QUAL_ORIG"          "LATE_UPDATER"                "LATE_FILER"                 
+[64] "FLT_RULES"                   "MAN_EXMP"                    "MAN_EXMPT"                  
+[67] "REROUTING_STATE"             "SLOT_FORCED"                 "SSR_CODE"                   
+[70] "SUSP_STATUS"                 "PERF_ROLE"                   "IFPS_PLAN_ID"               
+[73] "RVR_VAL"                     "REROUTING_REASON"            "SELCAL_CODE"                
+[76] "PREDEF_SNSTV_HDL_RSN"        "FL_REQ"                      "NR_REG_AFF"                 
+[79] "NR_REG_EXL"                  "OPERATING_AIRCRAFT_OPERATOR" "AIRCRAFT_ADDRESS_SOURCE"    
+[82] "AIRCRAFT_ADDRESS"            "IFPZ_ENTRY_TIME_EST"         "IFPZ_EXIT_TIME_EST"         
+[85] "IFPZ_ENTRY_TIME_ACT"         "IFPZ_EXIT_TIME_ACT"          "DATA_LINK_TYPE"             
+[88] "FPL_REMARK"                  "SNSTV_HDL_RSN"               "ADES_FILED"                 
+
+
+
+```{r}
+cols <- c("FLT_UID","LOBT","AIRCRAFT_ID","REGISTRATION","AIRCRAFT_TYPE_ICAO_ID","AIRCRAFT_OPERATOR","ADEP","ADES","ADES_FILED","AOBT_3","ARVT_3","TAXI_TIME_3","RTE_LEN_3","FLT_DUR_3","WK_TBL_CAT","ICAO_FLT_TYPE","OPERATING_AIRCRAFT_OPERATOR","AIRCRAFT_ADDRESS")
+
+ds2 <- ds %>% select(cols)
+
+# write_csv(ds2, "./data/2020-01-I.csv")
+```
+
