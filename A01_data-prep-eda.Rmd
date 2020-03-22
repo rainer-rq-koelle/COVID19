@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(readxl)
 library(tidyverse)
 library(lubridate)
+library(plotly)
+library(zoo)
 ```
 
 Thierry downloaded NM flight table. Stored on P and then moved to project folder, data-src.
@@ -64,5 +66,138 @@ cols <- c("FLT_UID","LOBT","AIRCRAFT_ID","REGISTRATION","AIRCRAFT_TYPE_ICAO_ID",
 ds2 <- ds %>% select(cols)
 
 # write_csv(ds2, "./data/2020-01-I.csv")
+# ds <- read_csv("./data/2020-01-I.csv")
+```
+
+combine with airport data from ourairports.com
+
+```{r}
+url_ourapts <- "https://ourairports.com/data/airports.csv"
+# apt_info    <- read_csv(url_ourapts)
+# write_csv(apt_info, "./data/apts_ourairports.csv")
+
+# extract relevant columns and clean names
+# filter for "regular" ICAO location indicators
+apt_info <- apt_info %>% select(
+  ID = id, ICAO = ident, IATA = iata_code, NAME = name, LAT = latitude_deg, LON = longitude_deg
+  ,COUNTRY = iso_country, REGION = iso_region ) %>%
+  filter(stringr::str_detect(ICAO, "[A-Z]{4}"))
+
+# merge with ECTRL MS
+ectrl_ms <- read_csv2("./data/ECTRL_MS.csv")
+
+apt_info <- apt_info %>% 
+  left_join(
+    ectrl_ms %>% select(ISO_2D, MS)
+    ,by =c("COUNTRY" = "ISO_2D"))
+```
+
+add country and region to ADEP and ADES
+
+```{r}
+apt_ctry_reg <- apt_info %>% select(ICAO, COUNTRY, REGION, ECTRL = MS)
+
+ds <- ds %>% left_join(apt_ctry_reg, by = c("ADEP" = "ICAO"))
+
+#missing   <- ds %>% filter(is.na(COUNTRY))
+#write_csv(missing, "./data/missing_apt_iso3661.csv")
+
+ds <- ds %>% rename(ADEP_CTRY = COUNTRY, ADEP_REG = REGION, ADEP_ECTRL = ECTRL)
+
+ds <- ds %>% left_join(apt_ctry_reg, by = c("ADES" = "ICAO")) %>%
+  rename(ADES_CTRY = COUNTRY, ADES_REG = REGION, ADES_ECTRL = ECTRL)
+```
+
+Regional flight pattern
+
+```{r}
+# utility function for negated %in%
+"%!in%" <- function(a,b){ ! a %in% b }
+
+ds <- ds %>% mutate(REG_PAT = case_when(
+   ADEP_ECTRL %in% c("MS")  & ADES_ECTRL %in% c("MS")  ~ "INTRA"  # TBD Israel and Morocco --> CAS
+  ,ADEP_ECTRL %!in% c("MS") & ADES_ECTRL %!in% c("MS") ~ "OVR"
+  ,ADEP_ECTRL %in% c("MS")  & ADES_ECTRL %!in% c("MS") ~ "OUT"
+  ,ADEP_ECTRL %!in% c("MS") & ADES_ECTRL %in% c("MS")  ~ "INB"
+  ,TRUE ~ "NA"
+))
+```
+
+
+
+General traffic stats
+
+```{r}
+tfc <- ds %>% mutate(DOF = lubridate::as_date(LOBT)) %>% 
+  group_by(DOF) %>%
+  summarise(FLIGHTS = n()
+            ,INTRA = sum(REG_PAT == "INTRA")
+            ,OVR   = sum(REG_PAT == "OVR")
+            ,OUT   = sum(REG_PAT == "OUT")
+            ,INB   = sum(REG_PAT == "INB")
+            ) %>%
+  mutate(
+    FLIGHTS_ROLL = zoo::rollmean(FLIGHTS, k = 7, fill=NA)
+    ,INTRA_ROLL  = zoo::rollmean(INTRA,   k = 7, fill=NA)
+    ,OVR_ROLL    = zoo::rollmean(OVR,     k = 7, fill=NA)
+    ,OUT_ROLL    = zoo::rollmean(OUT,     k = 7, fill=NA)
+    ,INB_ROLL    = zoo::rollmean(INB,     k = 7, fill=NA)
+         )
+```
+
+
+```{r}
+tfc %>% 
+  plot_ly(x = ~DOF, y = ~FLIGHTS, name = "total flights", type = "scatter") %>%
+  add_lines(y = ~ FLIGHTS_ROLL, name = "total flights (rolling average)") %>%
+  add_trace(y = ~INTRA, name = "intra EUROCONTROL region") %>%
+  add_lines(y = ~INTRA_ROLL, name = "intra ECTRL (rolling average)") %>%
+  add_trace(y = ~OVR, name = "overflights") %>%
+  add_lines(y = ~OVR_ROLL, name = "overflights (rolling average)") %>%
+  add_trace(y = ~OUT, name = "out of EUROCONTROL region") %>%
+  add_lines(y = ~OUT_ROLL, name = "out of ECTRL (rolling average)") %>%
+  add_trace(y = ~INB, name = "inbound EUROCONTROL region") %>%
+  add_lines(y = ~INB_ROLL, name = "inbound ECTRL (rolling average)") %>%
+  layout(xaxis = list(title=""), yaxis = list(title = "number of flights"#, type = "log"
+                                              ))
+```
+
+write out day-by-day data - initial batch
+
+```{r}
+read_NM_flight_table <- function(.fn){
+  ds <- readxl::read_excel(.fn, sheet = "Sheet 1", col_names = TRUE)
+}
+
+trim_NM_flight_table <- function(.ds){
+  ds <- .ds %>%  
+    select(
+       FLTID = AIRCRAFT_ID, REG = REGISTRATION, ICAO24 = "AIRCRAFT_ADDRESS"
+      , TYPE = AIRCRAFT_TYPE_ICAO_ID, OPR = AIRCRAFT_OPERATOR
+      ,"ADEP", "ADES", "LOBT", "AOBT_3", "ARVT_3"
+      )
+}
+
+write_day_by_day <- function(.ds){
+  ds <- .ds %>% 
+    dplyr::mutate(DOF = lubridate::as_date(LOBT)) %>% 
+    dplyr::group_split(DOF)
+  
+  fns <- ds %>% map(.f = ~paste0(unique(.$DOF),"_NM_FLT.csv"))
+  
+  map2( .x = ds, .y = fns
+       ,.f = ~write_csv( x    = .x %>% select(-DOF)
+                        ,path = paste0("./data/", .y))
+       )
+  return(ds %>% select(-DOF))
+}
+```
+
+```{r}
+fn <- "./data-src/T_FLIGHT 01012020-15012020.xlsx"
+
+rq <- fn %>% read_NM_flight_table() %>% 
+  trim_NM_flight_table() %>%
+  write_day_by_day()
 ```
 

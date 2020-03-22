@@ -1,0 +1,44 @@
+STATE;YEAR;MS;ISO_2D;ISO_3D
+Belgium;1963;MS;BE;BEL
+France;1963;MS;FR;FRA
+Germany;1963;MS;DE;DEU
+Luxembourg;1963;MS;LU;LUX
+The Netherlands;1963;MS;NL;NLD
+United Kingdom;1963;MS;GB;GBR
+Ireland;1965;MS;IE;IRL
+Portugal;1986;MS;PT;PRT
+Greece;1988;MS;GR;GRC
+Malta;1989;MS;MT;MLT
+Turkey;1989;MS;TR;TUR
+Cyprus;1991;MS;CY;CYP
+Hungary;1992;MS;HU;HUN
+Switzerland;1992;MS;CH;CHE
+Austria;1993;MS;AT;AUT
+Denmark;1994;MS;DK;DNK
+Norway;1994;MS;NO;NOR
+Slovenia;1995;MS;SI;SVN
+Sweden;1995;MS;SE;SWE
+Czech Republic;1996;MS;CZ;CZE
+Italy;1996;MS;IT;ITA
+Romania;1996;MS;RO;ROU
+Bulgaria;1997;MS;BG;BGR
+Croatia;1997;MS;HR;HRV
+Monaco;1997;MS;MC;MCO
+Slovakia;1997;MS;SK;SVK
+Spain;1997;MS;ES;ESP
+North Macedonia;1998;MS;MK;MKD
+Republic of Moldova;2000;MS;MD;MDA
+Finland;2001;MS;FI;FIN
+Albania;2002;MS;AL;ALB
+Bosnia and Herzegovina;2004;MS;BA;BIH
+Poland;2004;MS;PL;POL
+Ukraine;2004;MS;UA;UKR
+Serbia;2005;MS;RS;SRB
+Armenia;2006;MS;AM;ARM
+Lithuania;2006;MS;LT;LTU
+Montenegro;2007;MS;ME;MNE
+Latvia;2011;MS;LV;LVA
+Georgia;2014;MS;GE;GEO
+Estonia;2015;MS;EE;EST
+Israel;2016;CAS;IL;ISR
+Morocco;2016;CAS;MA;MAR
