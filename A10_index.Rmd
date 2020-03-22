@@ -1,0 +1,145 @@
+---
+title: "COVID19"
+author: "RQ"
+date: "22/03/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+library(readr)
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(plotly)
+library(crosstalk)
+```
+
+# Impact of COVID19 on European Air Transport
+
+The corona virus pandemic (COVID19) is affecting air transportation around the world.
+This page focusses on the European context. Refernces to global impacts/scenarios will be provided with a view to compare the response to the air traffic reduction measures been put in place by different countries.
+
+Please consult the data page to learn more about the data behind this page.
+The data is openly available via: <<link>> or is extracted from other open data projects/servers.
+
+```{r load_data, message=FALSE}
+# read in NM flight table stored in sub-folder ./data/
+daily_tfcs <- list.files(path = "./data/", pattern = "*_NM_FLT.csv")
+ds <- daily_tfcs %>% 
+  purrr::map_dfr(.f = ~ readr::read_csv(paste0("./data/", .x)))
+
+# read in airport refernce data downloaded from ourairports.com
+apt_meta <- readr::read_csv("./data/apts_ourairports.csv") %>%
+  select( ICAO = ident, IATA = iata_code
+         ,COUNTRY = iso_country
+         ) %>%
+  filter(stringr::str_detect(ICAO, "[A-Z]{4}"))
+
+# merge with ECTRL MS
+ectrl_ms <- read_csv2("./data/ECTRL_MS.csv")
+
+apt_meta <- apt_meta %>% 
+  left_join(ectrl_ms %>% select(ISO_2D, MS), by =c("COUNTRY" = "ISO_2D"))
+
+apt_ctry <- apt_meta %>% select(ICAO, COUNTRY, ECTRL = MS)
+```
+
+The data presented covers the 
+
+* air traffic in Europe for the period `r daily_tfcs[1] %>% stringr::str_sub(1,10) %>% lubridate::ymd() %>% format("%d. %B %Y")` to `r daily_tfcs[length(daily_tfcs)] %>% stringr::str_sub(1,10) %>% lubridate::ymd() %>% format("%d. %B %Y")`.
+
+
+```{r}
+ds <- ds %>% left_join(apt_ctry, by = c("ADEP" = "ICAO")) %>%
+  rename(ADEP_CTRY = COUNTRY, ADEP_ECTRL = ECTRL)
+
+ds <- ds %>% left_join(apt_ctry, by = c("ADES" = "ICAO")) %>%
+  rename(ADES_CTRY = COUNTRY, ADES_ECTRL = ECTRL)
+```
+
+```{r}
+# utility function for negated %in%
+"%!in%" <- function(a,b){ ! a %in% b }
+
+ds <- ds %>% mutate(REG_PAT = case_when(
+   ADEP_ECTRL %in% c("MS")  & ADES_ECTRL %in% c("MS")  ~ "INTRA"  # TBD Israel and Morocco --> CAS
+  ,ADEP_ECTRL %!in% c("MS") & ADES_ECTRL %!in% c("MS") ~ "OVR"
+  ,ADEP_ECTRL %in% c("MS")  & ADES_ECTRL %!in% c("MS") ~ "OUT"
+  ,ADEP_ECTRL %!in% c("MS") & ADES_ECTRL %in% c("MS")  ~ "INB"
+  ,TRUE ~ "NA"
+))
+```
+
+```{r}
+tfc <- ds %>% mutate(DOF = lubridate::as_date(LOBT)) %>% 
+  group_by(DOF) %>%
+  summarise(FLIGHTS = n()
+            ,INTRA = sum(REG_PAT == "INTRA")
+            ,OVR   = sum(REG_PAT == "OVR")
+            ,OUT   = sum(REG_PAT == "OUT")
+            ,INB   = sum(REG_PAT == "INB")
+            ) %>%
+  mutate(
+    FLIGHTS_ROLL = zoo::rollmean(FLIGHTS, k = 7, fill=NA)
+    ,INTRA_ROLL  = zoo::rollmean(INTRA,   k = 7, fill=NA)
+    ,OVR_ROLL    = zoo::rollmean(OVR,     k = 7, fill=NA)
+    ,OUT_ROLL    = zoo::rollmean(OUT,     k = 7, fill=NA)
+    ,INB_ROLL    = zoo::rollmean(INB,     k = 7, fill=NA)
+         )
+
+tfc %>% 
+  plot_ly(x = ~DOF, y = ~FLIGHTS, name = "total flights", type = "scatter") %>%
+  add_lines(y = ~ FLIGHTS_ROLL, name = "total flights (rolling average)") %>%
+  add_trace(y = ~INTRA, name = "intra EUROCONTROL region") %>%
+  add_lines(y = ~INTRA_ROLL, name = "intra ECTRL (rolling average)") %>%
+  add_trace(y = ~OVR, name = "overflights") %>%
+  add_lines(y = ~OVR_ROLL, name = "overflights (rolling average)") %>%
+  add_trace(y = ~OUT, name = "out of EUROCONTROL region") %>%
+  add_lines(y = ~OUT_ROLL, name = "out of ECTRL (rolling average)") %>%
+  add_trace(y = ~INB, name = "inbound EUROCONTROL region") %>%
+  add_lines(y = ~INB_ROLL, name = "inbound ECTRL (rolling average)") %>%
+  layout( xaxis = list(title="")
+         ,yaxis = list(title = "number of flights")  #, type = "log"  
+         )
+```
+
+Traffic Development at European Airports
+
+```{r}
+apt_tfc <- ds %>% 
+  filter(REG_PAT %in% c("INTRA", "INB", "OUT")) %>%
+  mutate(DOF = lubridate::as_date(LOBT)) 
+
+arrs <- apt_tfc %>% filter(!is.na(ADES_ECTRL)) %>% 
+  group_by(ADES, DOF) %>% 
+  summarise( ARR_N = n()
+            ,INTRA = sum(REG_PAT == "INTRA")
+            ,OUT   = sum(REG_PAT == "OUT")
+            ,INB   = sum(REG_PAT == "INB")
+            ) %>%
+  ungroup()
+```
+
+
+```{r}
+top_x   <- arrs %>% group_by(ADES) %>% 
+  summarise(N = n(), ARR_N = sum(ARR_N, na.rm = TRUE)) %>% 
+  filter(ARR_N >= 20000)
+
+arrs_sd <- arrs %>% filter(ADES %in% top_x$ADES) %>%
+  SharedData$new(., key = ~ADES)
+
+parrs <- arrs_sd %>% 
+  plot_ly() %>% group_by(ADES) %>% 
+  add_lines(x = ~DOF, y = ~ARR_N, name = ~ADES, showlegend = FALSE) %>%
+  layout( xaxis = list(title = "")
+         ,yaxis = list(title = "arrivals")) %>%
+  highlight("plotly_selected")
+
+bscols(widths = c(12, 12)
+  ,filter_select("icao", "filter airports", arrs_sd, ~ADES)
+  ,parrs
+  )
+```
+
