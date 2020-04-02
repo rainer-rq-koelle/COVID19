@@ -9,6 +9,12 @@ library(scales)
 library(ftplottools)
 
 # data from Holger
+# library(googlesheets4)
+# library(dplyr)
+# data_url <- "https://docs.google.com/spreadsheets/d/1IdHD8xi0gQ2G6IV6R3RPes18Xa_zVZ8nYHynBsTPW5w/edit?usp=sharing"
+# read_sheet(data_url, sheet = "ECTL") %>% 
+#   write_csv("data/COVID_Page 2_Time series.csv")
+
 daily_traffic <- read_csv("data/COVID_Page 2_Time series.csv")
 daily_traffic <- daily_traffic %>% 
   janitor::clean_names() %>% 
