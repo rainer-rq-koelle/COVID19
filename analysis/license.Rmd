@@ -13,17 +13,12 @@ The license can also be found under `LICENSE` in the root of the Git repo.
 
 Please cite this work as
 
-How to cite this work:
-
 ```
-@Article{,
-  title = {Creating and sharing reproducible research code the workflowr way [version 1; peer review: 3 approved]},
-  author = {John D Blischak and Peter Carbonetto and Matthew Stephens},
-  journal = {F1000Research},
-  year = {2019},
-  volume = {8},
-  number = {1749},
-  doi = {10.12688/f1000research.20843.1},
-  url = {https://doi.org/10.12688/f1000research.20843.1},
+@Report{koelle_etal_2020,
+  title = {Studying the imppact of COVID19 on European Air Transportation},
+  author = {Rainer Koelle},
+  year = {2020},
+  doi = {tbd},
+  url = {https://rainer-rq-koelle.github.io/COVID19/index.html},
 }
 ```
