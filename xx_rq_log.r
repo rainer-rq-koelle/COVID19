@@ -14,3 +14,10 @@ wflow_start("/cloud/project", existing = TRUE)
 wflow_build()
 # edit as appropriate and rerun
 wflow_build()
+
+
+# publish changes
+# check first
+wflow_status()
+
+ 
