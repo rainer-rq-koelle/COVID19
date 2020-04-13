@@ -1,7 +1,7 @@
 name: project
 output_dir: ../docs
 navbar:
-  title: COVID19
+  title: COVID19 European Air Transport
   left:
   - text: Home
     href: index.html
