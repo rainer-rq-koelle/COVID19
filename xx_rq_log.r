@@ -22,4 +22,6 @@ wflow_status()
 wflow_view()
 
 wflow_publish(message = "included dashboard dummy")
+
+wflow_git_commit(".","add dashboard")
  
