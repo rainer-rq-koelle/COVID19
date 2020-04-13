@@ -7,4 +7,5 @@ editor_options:
   chunk_output_type: console
 ---
 
-Describe your project.
+This project sets up a webpage for studying the impact of COVID19 on air transportation in Europe.
+The page is established using R workflowr as the engine.
