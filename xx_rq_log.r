@@ -19,5 +19,7 @@ wflow_build()
 # publish changes
 # check first
 wflow_status()
+wflow_view()
 
+wflow_publish(message = "included dashboard dummy")
  

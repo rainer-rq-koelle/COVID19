@@ -11,3 +11,5 @@ editor_options:
 This webpage has been set up to study the impact of COVID19 on European air transportation.
 
 The page will be updated in regular intervals.
+
+The supporting dashboard is published at: [dashboard](dashboard.html)
