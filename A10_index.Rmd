@@ -88,7 +88,7 @@ tfc <- ds %>% mutate(DOF = lubridate::as_date(LOBT)) %>%
     ,INB_ROLL    = zoo::rollmean(INB,     k = 7, fill=NA)
          )
 
-tfc %>% 
+p <- tfc %>% 
   plot_ly(x = ~DOF, y = ~FLIGHTS, name = "total flights", type = "scatter") %>%
   add_lines(y = ~ FLIGHTS_ROLL, name = "total flights (rolling average)") %>%
   add_trace(y = ~INTRA, name = "intra EUROCONTROL region") %>%
@@ -102,7 +102,10 @@ tfc %>%
   layout( xaxis = list(title="")
          ,yaxis = list(title = "number of flights")  #, type = "log"  
          )
+p
 ```
+
+<!-- htmlwidgets::saveWidget(p, "traffic.html") -->
 
 Traffic Development at European Airports
 
@@ -137,9 +140,11 @@ parrs <- arrs_sd %>%
          ,yaxis = list(title = "arrivals")) %>%
   highlight("plotly_selected")
 
-bscols(widths = c(12, 12)
+p1 <- bscols(widths = c(12, 12)
   ,filter_select("icao", "filter airports", arrs_sd, ~ADES)
   ,parrs
   )
+p1
 ```
 
+htmlwidgets::saveWidget(p1, "filter-test.html")

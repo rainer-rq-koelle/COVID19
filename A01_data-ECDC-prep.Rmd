@@ -1,0 +1,82 @@
+---
+title: "ECDC Data"
+author: "RQ"
+date: "26/03/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+```
+
+The ECDC collects COVID related data on a daily basis and publishes it on their webpage: https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide
+
+The ECDC provides also instructions on how to download the data file.
+
+```{r}
+#these libraries are necessary
+library(readxl)
+library(httr)
+
+#create the URL where the dataset is stored with automatic updates every day
+
+url <- paste("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-",format(Sys.time(), "%Y-%m-%d"), ".xlsx", sep = "")
+
+#download the dataset from the website to a local temporary file
+
+GET(url, authenticate(":", ":", type="ntlm")
+    ,write_disk( tf <- tempfile(
+      pattern = paste0("ECDC_",format(Sys.time(), "%Y-%m-%d"),"_")
+      ,fileext = ".xlsx"
+      ,tmpdir = "./data-src/"
+                ))
+)
+
+#read the Dataset sheet into “R”
+
+ds <- read_excel(tf)
+
+# write to file
+tdy <- lubridate::today(tzone = "UTC") 
+fn  <- paste0("./data/ECDC_",tdy,".csv")
+if(file.exists(fn)){
+  message("Today's ECDC download exists already!")
+  ds <- read_csv(fn)
+}else{
+  write_csv(ds, path = fn)
+}
+```
+
+## daily development world
+
+```{r}
+daily_totals <- ds %>% group_by(dateRep) %>%
+  summarise(Daily_Deaths = sum(deaths)) %>% ungroup() %>%
+  mutate(New_Deaths = Daily_Deaths - lag(Daily_Deaths)
+         ,Total_Deaths = cumsum(Daily_Deaths))
+
+p <- daily_totals %>% 
+  plot_ly() %>% 
+  add_lines(x = ~dateRep, y = ~Total_Deaths, name = "Total Deaths") %>%
+  add_lines(x = ~dateRep, y = ~Daily_Deaths, name = "New Daily Deaths")
+p
+```
+
+```{r}
+daily_totals %>% 
+  tidyr::pivot_longer( cols = c(Daily_Deaths,Total_Deaths)
+                      ,names_to ="trend", values_to = "count") %>%
+  mutate(dateRep = lubridate::as_date(dateRep)
+        # ,dateRep = factor(dateRep)
+         ) %>%
+ 
+ plot_ly() %>% 
+  add_lines(x = ~dateRep, y = ~count, group = ~trend, name = ~trend, frame=~dateRep) %>%
+  animation_slider() %>%
+  layout(xaxis = list(type = "category", tickformat = "%d %B (%a)<br>%Y"))
+```
+

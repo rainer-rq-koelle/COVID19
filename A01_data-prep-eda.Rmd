@@ -75,6 +75,7 @@ combine with airport data from ourairports.com
 url_ourapts <- "https://ourairports.com/data/airports.csv"
 # apt_info    <- read_csv(url_ourapts)
 # write_csv(apt_info, "./data/apts_ourairports.csv")
+apt_info <- readr::read_csv("./data/apts_ourairports.csv")
 
 # extract relevant columns and clean names
 # filter for "regular" ICAO location indicators
@@ -165,8 +166,18 @@ tfc %>%
 write out day-by-day data - initial batch
 
 ```{r}
+file_extension <- function(.filename){
+  x   <- .filename %>% strsplit(".", fixed = TRUE) %>% unlist() 
+  end <- x[length(x)]
+}
+
 read_NM_flight_table <- function(.fn){
-  ds <- readxl::read_excel(.fn, sheet = "Sheet 1", col_names = TRUE)
+  if(file_extension(.fn) == "xlsx"){
+    ds <- readxl::read_excel(.fn, sheet = "Sheet 1", col_names = TRUE)
+  }
+  if(file_extension(.fn) == "csv"){
+    ds <- readr::read_csv2(.fn)
+  }
 }
 
 trim_NM_flight_table <- function(.ds){
@@ -179,6 +190,9 @@ trim_NM_flight_table <- function(.ds){
 }
 
 write_day_by_day <- function(.ds){
+  if(is.character(.ds$LOBT))   .ds$LOBT   <- lubridate::dmy_hms(.ds$LOBT) 
+  if(is.character(.ds$AOBT_3)) .ds$AOBT_3 <- lubridate::dmy_hms(.ds$AOBT_3) 
+  if(is.character(.ds$ARVT_3)) .ds$ARVT_3 <- lubridate::dmy_hms(.ds$ARVT_3) 
   ds <- .ds %>% 
     dplyr::mutate(DOF = lubridate::as_date(LOBT)) %>% 
     dplyr::group_split(DOF)
@@ -194,10 +208,22 @@ write_day_by_day <- function(.ds){
 ```
 
 ```{r}
-fn <- "./data-src/T_FLIGHT 01012020-15012020.xlsx"
+# fn <- "./data-src/T_FLIGHT 01012020-15012020.xlsx"
+# fn <- "./data-src/T_FLIGHT 16012020-31012020.xlsx"
+# fn <- "./data-src/T_FLIGHT 022020.xlsx"
+# fn <- "./data-src/T_FLIGHT 032020.xlsx"
+# fn <- "./data-src/T_FLIGHT 032020.xlsx"
+#fn <- "./data-src/20200319.csv"
+#fn <- "./data-src/20200320.csv"
 
 rq <- fn %>% read_NM_flight_table() %>% 
   trim_NM_flight_table() %>%
   write_day_by_day()
+```
+
+
+```{r}
+ds1 <- readr::read_csv("./data/2020-03-20_NM_FLT.csv")
+ds2 <- readr::read_csv("./data/2020-03-20_NM_FLT_TH.csv")
 ```
 
